@@ -1,0 +1,14 @@
+---
+- import_tasks: vpc.yml
+
+- import_tasks: keypair.yml
+
+- import_tasks: security_group.yml
+
+- import_tasks: ami.yml
+
+- import_tasks: ecr.yml
+
+- import_tasks: ecs.yml
+
+- import_tasks: debug.yml

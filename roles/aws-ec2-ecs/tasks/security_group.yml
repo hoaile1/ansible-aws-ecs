@@ -1,0 +1,31 @@
+---
+- block:
+  - name: Get current system public IP
+    ipify_facts:
+
+  - name: Create security group and add rules
+    ec2_group:
+      name: "{{ demo_sg }}"
+      description: Demo security group
+      vpc_id: "{{ vpc.vpc.id }}"
+      region: "{{ demo_region }}"
+      rules:
+        - proto: tcp
+          from_port: 22
+          to_port: 22
+          cidr_ip: "{{ ipify_public_ip }}/32"
+        - proto: icmp
+          from_port: -1
+          to_port: -1
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 5001
+          to_port: 5001
+          cidr_ip: 0.0.0.0/0
+        - proto: tcp
+          from_port: 80
+          to_port: 80
+          cidr_ip: 0.0.0.0/0
+    register: sg
+
+  when: action == "create"

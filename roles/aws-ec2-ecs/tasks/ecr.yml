@@ -1,0 +1,54 @@
+---
+- block:
+  - name: Make sure the repo exists
+    ecs_ecr:
+      name: "{{ demo_repo }}"
+      region: "{{ demo_region }}"
+    register: repo
+
+  - set_fact:
+      url: "{{ repo.repository.repositoryUri }}"
+
+  - name: Log in
+    shell: >
+      eval $(aws ecr get-login --no-include-email --region {{ demo_region }} \
+      | sed 's|https://||')
+    changed_when: false
+
+  # FIXME: This looks ugly.
+  - name: Build, tag, and push the image
+    command: "{{ item }}"
+    with_items:
+      - docker-compose build
+      - "docker tag {{ demo_repo }}:{{ demo_repo_tag }} {{ url }}:{{ demo_repo_tag }}"
+      - "docker push {{ url }}:{{ demo_repo_tag }}"
+
+  when: action == "create"
+
+- block:
+  # There's currently no Ansible module/function that will delete all the images
+  # in a repo before deleting the repo itself.
+  - name: List all the images in the repo
+    shell: >
+      aws ecr list-images --repository-name {{ demo_repo }} \
+      --query imageIds[*].[imageDigest] --output text
+    register: images
+    changed_when: false
+    failed_when:
+      - images|failed
+      - not "'RepositoryNotFoundException' in images.stderr"
+
+  - name: Delete all the images in the repo
+    shell: >
+      aws ecr batch-delete-image --repository-name {{ demo_repo }} \
+      --image-ids imageDigest={{ item }}
+    with_items: "{{ images.stdout_lines }}"
+    when: images|length > 0
+
+  - name: Delete the repo
+    ecs_ecr:
+      name: "{{ demo_repo }}"
+      region: "{{ demo_region }}"
+      state: absent
+
+  when: action == "destroy"

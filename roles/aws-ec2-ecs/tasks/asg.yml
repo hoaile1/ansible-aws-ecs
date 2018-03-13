@@ -1,0 +1,43 @@
+---
+- block:
+  - name: Create an AWS autoscaling launch configuration
+    ec2_lc:
+      name: "{{ demo_repo }}"
+      state: present
+      image_id: "{{ ami.results[0].ami_id }}"
+      key_name: "{{ your_name }}"
+      security_groups: "{{ demo_sg }}"
+      instance_type: "{{ demo_instance_type }}"
+      instance_monitoring: yes
+      instance_profile_name: "{{ demo_profile_name }}"
+      assign_public_ip: yes
+      user_data: "{{ demo_user_data }}"
+
+  - name: Create an AWS autoscaling group
+    ec2_asg:
+      name: "{{ demo_repo }}"
+      state: present
+      region: "{{ demo_region }}"
+      launch_config_name: "{{ demo_repo }}"
+      min_size: 0
+      max_size: 1
+      desired_capacity: 1
+      vpc_zone_identifier: "{{ subnet.subnet.id }}"
+      tags:
+        - Name: "{{ demo_hostname }}"
+
+  when: action == "create"
+
+- block:
+  - name: Delete the AWS autoscaling group
+    ec2_asg:
+      name: "{{ demo_repo }}"
+      region: "{{ demo_region }}"
+      state: absent
+
+  - name: Delete the AWS autoscaling launch configuration
+    ec2_lc:
+      name: "{{ demo_repo }}"
+      state: absent
+
+  when: action == "destroy"

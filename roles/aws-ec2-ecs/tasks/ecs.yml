@@ -1,0 +1,72 @@
+---
+- block:
+  - name: Create a cluster
+    ecs_cluster:
+      state: present
+      name: "{{ demo_repo }}"
+    register: cluster
+
+  - set_fact:
+      cluster_name: "{{ cluster.cluster.clusterName }}"
+
+  - import_tasks: asg.yml
+
+  - name: Create a task definition
+    ecs_taskdefinition:
+      containers:
+        - name: flask
+          image: "{{ url }}:{{ demo_repo_tag }}"
+          cpu: 1024
+          memory: 1024
+          essential: true
+          portMappings:
+            - containerPort: 5001
+              hostPort: 5001
+      family: "{{ demo_repo }}"
+      state: present
+    register: def
+
+  - name: Create a service
+    ecs_service:
+      state: present
+      name: "{{ demo_service }}"
+      cluster: "{{ demo_repo }}"
+      task_definition: "{{ def.taskdefinition.family }}:{{ def.taskdefinition.revision }}"
+      desired_count: 1
+
+  when: action == "create"
+
+- block:
+  - import_tasks: asg.yml
+
+  - name: Gather facts about the ECS service
+    ecs_service_facts:
+      cluster: "{{ demo_repo }}"
+      service: "{{ demo_service }}"
+      details: true
+    register: ecs_facts
+
+  - name: Find the task definition
+    set_fact:
+      task_definition: "{{ ecs_facts.ansible_facts.services[0].taskDefinition }}"
+
+  - name: Scale down the ECS service to 0
+    ecs_service:
+      state: present
+      name: "{{ demo_service }}"
+      cluster: "{{ demo_repo }}"
+      task_definition: "{{ task_definition }}"
+      desired_count: 0
+
+  - name: Delete the service
+    ecs_service:
+      name: "{{ demo_service }}"
+      cluster: "{{ demo_repo }}"
+      state: absent
+
+  - name: Delete the cluster
+    ecs_cluster:
+      name: "{{ demo_repo }}"
+      state: absent
+
+  when: action == "destroy"

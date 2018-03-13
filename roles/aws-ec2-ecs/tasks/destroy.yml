@@ -1,0 +1,6 @@
+---
+- import_tasks: ecs.yml
+
+- import_tasks: ecr.yml
+
+- import_tasks: vpc.yml

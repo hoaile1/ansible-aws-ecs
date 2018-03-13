@@ -1,0 +1,13 @@
+---
+- block:
+  - name: Find the latest image
+    ec2_ami_find:
+      owner: amazon
+      name: "{{ demo_ami }}"
+      region: "{{ demo_region }}"
+      sort: creationDate
+      sort_order: descending
+      sort_end: 1
+    register: ami
+
+  when: action == "create"

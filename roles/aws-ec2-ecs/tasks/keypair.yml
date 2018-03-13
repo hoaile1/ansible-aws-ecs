@@ -1,0 +1,11 @@
+---
+- block:
+  - name: Create a keypair
+    ec2_key:
+      name: "{{ your_name }}"
+      region: "{{ demo_region }}"
+      key_material: "{{ item }}"
+    with_file: "{{ ansible_user_dir }}/.ssh/id_rsa.pub"
+    # AWS doesn't like ed25519 keys :(
+
+  when: action == "create"

@@ -1,0 +1,30 @@
+---
+- block:
+  - name: Gather facts about the AWS autoscaling group
+    ec2_asg_facts:
+      name: "{{ demo_repo }}"
+      region: "{{ demo_region }}"
+    register: asg_facts
+
+  - name: Find the instance's id
+    set_fact:
+      instance_id: "{{ item.instances | map(attribute='instance_id') | list }}"
+    with_items: "{{ asg_facts.results }}"
+
+  - name: Gather facts about the instance
+    ec2_instance_facts:
+      instance_ids:
+        - "{{ item }}"
+    with_items: "{{ instance_id }}"
+    register: instance_facts
+
+  - name: Find the instance's ip
+    set_fact:
+      instance_ip: "{{ item.instances | map(attribute='public_ip_address') | list }}"
+    with_items: "{{ instance_facts.results }}"
+
+  - debug:
+      msg: "http://{{ item }}:5001"
+    with_items: "{{ instance_ip }}"
+
+  when: action == "create"
