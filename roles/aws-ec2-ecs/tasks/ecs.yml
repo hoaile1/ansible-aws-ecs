@@ -3,6 +3,7 @@
   - name: Create a cluster
     ecs_cluster:
       state: present
+      region: "{{ demo_region }}"
       name: "{{ demo_repo }}"
     register: cluster
 
@@ -20,15 +21,17 @@
           memory: 1024
           essential: true
           portMappings:
-            - containerPort: 5001
-              hostPort: 5001
+            - containerPort: "{{ demo_port }}"
+              hostPort: "{{ demo_port }}"
       family: "{{ demo_repo }}"
       state: present
+      region: "{{ demo_region }}"
     register: def
 
   - name: Create a service
     ecs_service:
       state: present
+      region: "{{ demo_region }}"
       name: "{{ demo_service }}"
       cluster: "{{ demo_repo }}"
       task_definition: "{{ def.taskdefinition.family }}:{{ def.taskdefinition.revision }}"
@@ -57,6 +60,10 @@
       cluster: "{{ demo_repo }}"
       task_definition: "{{ task_definition }}"
       desired_count: 0
+    register: scaledown
+    failed_when:
+      - scaledown|failed
+      - not "'ClusterNotFoundException' in scaledown.stderr"
 
   - name: Delete the service
     ecs_service:

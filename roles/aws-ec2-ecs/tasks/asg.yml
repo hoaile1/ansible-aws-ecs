@@ -4,6 +4,7 @@
     ec2_lc:
       name: "{{ demo_repo }}"
       state: present
+      region: "{{ demo_region }}"
       image_id: "{{ ami.results[0].ami_id }}"
       key_name: "{{ your_name }}"
       security_groups: "{{ demo_sg }}"

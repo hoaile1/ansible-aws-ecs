@@ -14,6 +14,7 @@ demo_route_table: "{{ your_name }}-rt"
 demo_repo: testrepo
 demo_repo_tag: latest
 demo_service: travis_test
+demo_port: 5001
 demo_user_data: |
   #cloud-config
   system_info:
